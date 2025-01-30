@@ -1,9 +1,12 @@
+import { Typography } from "@mui/material"
 
 
 const Report = () => {
   return (
     <div>
-      Report
+      <Typography fontWeight="fontWeightBold">
+        Report
+      </Typography>
     </div>
   )
 }
