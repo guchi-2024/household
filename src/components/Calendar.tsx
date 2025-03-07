@@ -7,13 +7,25 @@ import "../calendar.css"
 import { Balance, CalendarContent, Transaction } from '../types'
 import { calculateDailyBalances } from '../utils/financeCalculations'
 import { formatCurrency } from '../utils/formatting'
+import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction'
+import { useTheme } from '@mui/material'
+import { isSameMonth } from 'date-fns'
 
 interface CalendarProps {
-  monthlyTransactions: Transaction[],
-  setCurrentMonth: React.Dispatch<React.SetStateAction<Date>>
+  monthlyTransactions: Transaction[];
+  setCurrentMonth: React.Dispatch<React.SetStateAction<Date>>;
+  setCurrentDay: React.Dispatch<React.SetStateAction<string>>;
+  currentDay: string;
+  today: string;
 }
 
-const Calendar = ({monthlyTransactions, setCurrentMonth}: CalendarProps) => {
+const Calendar = ({
+  monthlyTransactions, 
+  setCurrentMonth,
+  setCurrentDay,
+  currentDay,
+  today
+}: CalendarProps) => {
   
   // const events = [
   //   { title: 'Meeting', start: "2025-02-03", income: 600, expense: 300, balance: 300},
@@ -48,6 +60,8 @@ const Calendar = ({monthlyTransactions, setCurrentMonth}: CalendarProps) => {
   //   },
   // ]
 
+  const theme = useTheme()
+
   const dailyBalances = calculateDailyBalances(monthlyTransactions)
   console.log(dailyBalances)
 
@@ -72,22 +86,16 @@ const Calendar = ({monthlyTransactions, setCurrentMonth}: CalendarProps) => {
   const calendarEvents = (createCalendarEvents(dailyBalances))
   console.log(calendarEvents); 
 
-  // const calendarEvents =
-  //   [
-  //     {
-  //       start: "2025-02-10",
-  //       income: 20000, 
-  //       expense: 200, 
-  //       balanace: 19800
-  //     },
-  //     {
-  //       start: "2025-02-10",
-  //       income: 0, 
-  //       expense: 2000, 
-  //       balanace: -2000 
-  //     }
-  //   ]
+  const backgroundEvent = {
+    start: currentDay,
+    display: "background",
+    backgroundColor: theme.palette.incomeColor.light,
+  }
+  console.log([...calendarEvents, backgroundEvent]);
 
+  
+
+  // カレンダーイベントの見た目を作る関数 
   const renderEventContent = (eventInfo: EventContentArg) => {
     console.log(eventInfo);
     // 上記のeventInfoからデベロッパーの情報が見つからなかった
@@ -107,10 +115,22 @@ const Calendar = ({monthlyTransactions, setCurrentMonth}: CalendarProps) => {
   }
 
   // 月ごとのデータをカレンダーに表示する
-  const handleDateSet = (datesetInfo:DatesSetArg) => {
-    console.log(datesetInfo);
-    setCurrentMonth(datesetInfo.view.currentStart);
+  const handleDateSet = (datesetInfo: DatesSetArg) => {
+    const currentMonth = datesetInfo.view.currentStart
+    console.log(datesetInfo.view.currentStart);
+    setCurrentMonth(currentMonth);
+    const todayDate = new Date();
+    if (isSameMonth(todayDate, currentMonth)) {
+      setCurrentDay(today);
+    }
+  };
+  
+  // カレンダー内のクリックした日付
+  const handleDateClick = (dateInfo: DateClickArg) => {
+    console.log(dateInfo);
+    setCurrentDay(dateInfo.dateStr);  
   }
+
 
   return (
     <div>
@@ -118,12 +138,13 @@ const Calendar = ({monthlyTransactions, setCurrentMonth}: CalendarProps) => {
         // カレンダーを月で表示
         locale={jaLocale}
         // 月のカレンダーを表示
-        plugins={[dayGridPlugin]}
+        plugins={[dayGridPlugin, interactionPlugin]}
         initialView='dayGridMonth'
-        events={calendarEvents}
+        events={[...calendarEvents, backgroundEvent]}
         // 
         eventContent={renderEventContent}
         datesSet={handleDateSet}
+        dateClick={handleDateClick}
       />
     </div>
   )
