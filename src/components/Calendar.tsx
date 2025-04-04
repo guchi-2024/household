@@ -119,6 +119,8 @@ const Calendar = ({
     const currentMonth = datesetInfo.view.currentStart
     console.log(datesetInfo.view.currentStart);
     setCurrentMonth(currentMonth);
+    // 今日をクリックした時、今日の日付にする。
+    // datesetInfoは月のみ取得するのでDateで日にちと月を取得させる
     const todayDate = new Date();
     if (isSameMonth(todayDate, currentMonth)) {
       setCurrentDay(today);

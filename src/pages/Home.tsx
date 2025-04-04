@@ -18,12 +18,22 @@ const Home = ({monthlyTransactions, setCurrentMonth}: HomeProps) => {
   const today = format(new Date(), "yyyy-MM-dd");
   console.log(today);
   const [currentDay, setCurrentDay] = useState(today);
+  const[isEntryDrawerOpen, setIsEntryDrawerOpen] = useState(false);
   
   // カレンダーから選択した日付のデータを取得
   const dailyTransactions = monthlyTransactions.filter((transaction) => {
     return transaction.date === currentDay;
   });
-  console.log(dailyTransactions);
+  // console.log(dailyTransactions);
+
+  const closeForm = () => {
+    setIsEntryDrawerOpen(!isEntryDrawerOpen);
+  }
+
+  // フォームの開閉
+  const handleAddTransactionFrom = () => {
+    setIsEntryDrawerOpen(!isEntryDrawerOpen);
+  }
 
   return (
     <Box sx={{display: "flex"}}>
@@ -43,8 +53,13 @@ const Home = ({monthlyTransactions, setCurrentMonth}: HomeProps) => {
         <TransactionMenu 
           dailyTransactions={dailyTransactions}
           currentDay={currentDay}
+          onAddTransactionFrom={handleAddTransactionFrom}
         />
-        <TransactionFrom />
+        <TransactionFrom 
+          onCloseForm={closeForm} 
+          isEntryDrawerOpen={isEntryDrawerOpen}
+          currentDay={currentDay}
+        />
       </Box>
     </Box>
   )
