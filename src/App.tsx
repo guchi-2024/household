@@ -10,10 +10,11 @@ import { theme } from './theme/theme'
 import { CssBaseline } from '@mui/material'
 import { Transaction } from './types/index'
 import { useEffect, useState } from 'react'
-import { collection, getDocs } from 'firebase/firestore'
+import { addDoc, collection, deleteDoc, doc, getDocs, updateDoc } from 'firebase/firestore'
 import { db } from './firebase'
 import { format } from "date-fns";
 import { formatMonth } from './utils/formatting'
+import { Schema } from './validations/schema'
 
 
 function App() {
@@ -27,6 +28,8 @@ function App() {
   
   // 現在の日付を取得して変数に格納 *Date関数はTypescriptがdate型と推測するので型記述の必要はない
   const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  
   
 
 
@@ -61,12 +64,85 @@ function App() {
     fecheTransactions();
    
   }, [])
-
+  
+  // ひと月のデータのみ取得
   const monthlyTransactions = transactions.filter((transaction) => {
     return transaction.date.startsWith(formatMonth(currentMonth))
   })
+
+
+  // 保存処理
+  const handleSaveTransaction = async(transaction: Schema) => {
+    try {
+      // firestoreにデータを保存
+      const docRef = await addDoc(collection(db, "Transactions"), transaction);
+      console.log("docRef.id:", docRef.id);
+      
+      // リロードする前に追加内容を反映させる(セクション 50)
+      const newTransaction = {
+        id: docRef.id,
+        ...transaction,
+      } as Transaction;
+      setTransactions((prevTransaction) => [...prevTransaction, newTransaction]);
+
+    } catch(err) {
+      if(isFireStoreError(err)) {
+        console.log("Firebaseのエラーは:" ,err)
+        console.log("Firebaseのエラーメッセージは:" ,err.message)
+        console.log("Firebaseのエラーコードは:" ,err.code)
+      } else {
+        console.error("一般的なエラーは:" ,err)
+      }
+      // error
+    }
+  }
   
-  console.log(monthlyTransactions);
+  // 削除処理
+  const handleDeleteTransaction = async(transactionId: string) => {
+    //firestoreのデータ削除
+    try {
+      await deleteDoc(doc(db, "Transactions", transactionId));
+
+      // リロードする前に削除内容を反映させる(セクション 56)
+      const filterdTransactions = transactions.filter((transaction) => transaction.id !== transactionId);
+      setTransactions(filterdTransactions);
+
+    } catch(err) {
+      if(isFireStoreError(err)) {
+        console.log("Firebaseのエラーは:" ,err)
+        console.log("Firebaseのエラーメッセージは:" ,err.message)
+        console.log("Firebaseのエラーコードは:" ,err.code)
+      } else {
+        console.error("一般的なエラーは:" ,err)
+      }
+    }  
+   }
+  
+  // 更新処理
+  const handleUpdateTransaction = async(transaction: Schema, transactionId: string) => {
+    try {
+      const docRef = doc(db, "Transactions", transactionId);
+      await updateDoc(docRef, transaction);
+      
+      // リロードする前に更新内容を反映させる
+      // スプレット構文を使ってオブジェクトを更新 (セクション 59)
+      const updatedTransactions = transactions.map((t) => 
+        t.id === transactionId ? {...t, ...transaction} : t) as Transaction[];
+        console.log("内容更新:", updatedTransactions);
+        setTransactions(updatedTransactions);
+      
+    } catch(err) {
+      if(isFireStoreError(err)) {
+        console.log("Firebaseのエラーは:" ,err)
+        console.log("Firebaseのエラーメッセージは:" ,err.message)
+        console.log("Firebaseのエラーコードは:" ,err.code)
+      } else {
+        console.error("一般的なエラーは:" ,err)
+      }
+
+    }
+  }
+  
 
   return (
     <ThemeProvider theme={theme}>
@@ -80,6 +156,9 @@ function App() {
                 <Home 
                   monthlyTransactions={monthlyTransactions} 
                   setCurrentMonth={setCurrentMonth}
+                  onSaveTransaction={handleSaveTransaction}
+                  onDeleteTransaction={handleDeleteTransaction}
+                  onUpdateTransaction={handleUpdateTransaction}
                 />
               }
             />
